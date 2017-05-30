@@ -5,6 +5,7 @@
 package httpclient
 
 import (
+	"crypto/tls"
 	"fmt"
 
 	"bytes"
@@ -52,6 +53,7 @@ const (
 	OPT_PROXY             = 10004
 	OPT_REFERER           = 10016
 	OPT_USERAGENT         = 10018
+	OPT_INSECURE          = 10021
 
 	// Other OPT
 	OPT_REDIRECT_POLICY = 100000
@@ -74,6 +76,7 @@ var CONST = map[string]int{
 	"OPT_PROXY":             10004,
 	"OPT_REFERER":           10016,
 	"OPT_USERAGENT":         10018,
+	"OPT_INSECURE":          10021,
 
 	"OPT_REDIRECT_POLICY": 100000,
 	"OPT_PROXY_FUNC":      100001,
@@ -99,6 +102,7 @@ var transportOptions = []int{
 	OPT_TIMEOUT,
 	OPT_TIMEOUT_MS,
 	OPT_INTERFACE,
+	OPT_INSECURE,
 	OPT_PROXY,
 	OPT_PROXY_FUNC,
 }
@@ -279,6 +283,19 @@ func prepareTransport(options map[int]interface{}) (http.RoundTripper, error) {
 				return nil, err
 			}
 			transport.Proxy = http.ProxyURL(proxyUrl)
+		}
+	}
+
+	if insecure_, ok := options[OPT_INSECURE]; ok {
+		insecure := false
+		if insecure, ok = insecure_.(bool); !ok {
+			return nil, fmt.Errorf("OPT_INSECURE must be bool")
+		}
+		if insecure {
+			if transport.TLSClientConfig == nil {
+				transport.TLSClientConfig = &tls.Config{}
+			}
+			transport.TLSClientConfig.InsecureSkipVerify = insecure
 		}
 	}
 
